@@ -3,81 +3,48 @@
  */
 
 var fs = require('fs');
+exports.definition;
+exports.routes;
 
-exports.projectConfig = null;
-exports.appConfig = null;
-
-var ready = false;
-
-exports.init = function(appConfig,project) {
-  exports.appConfig = appConfig;
-  exports.project = project;
-  ready = true
-}
-
-exports.getConfig = function(cb) {
-  if (exports.projectConfig) {
-    cb(exports.projectConfig)
-  } else {
-    exports.loadConfig(cb)
+/**
+ * Where to find various important files. Always the same.
+ */
+var constants = {
+  source: '.makomi/',
+  files: {
+    makomi: 'makomi.json',
+    routes: 'routes.json'
   }
 }
 
-exports.loadConfig = function(cb) {
+/**
+ * Load the app definition file
+ */
+exports.loadDefinition = function(sourceDir,cb) {
 
-  if (!ready) throw new Error("Library must be initialized first")
+  var definitionFile = sourceDir+'/'+constants.source+constants.files.makomi;
 
-  var projectLocation = exports.appConfig.directories.workspace + exports.project + '/';
-  var projectSource = projectLocation + exports.appConfig.directories.makomi;
-  var configFile = projectSource + exports.appConfig.files.makomi;
-
-  fs.readFile(configFile,'utf-8',function (er, data) {
-
-    // load and expand the config for the project
+  fs.readFile(definitionFile,'utf-8',function (er, data) {
     // TODO: handle parsing errors
-    var projectConfig = JSON.parse(data)
-    projectConfig.location = projectLocation;
-    projectConfig.source = projectSource;
-    projectConfig.configFile = configFile;
-
-    exports.projectConfig = projectConfig;
-    cb(exports.projectConfig);
-
+    exports.definition = JSON.parse(data)
+    cb(exports.definition);
   });
 
 }
 
-exports.getRoutes = function(cb) {
-  if (exports.routes) {
-    cb(exports.routes)
-  } else {
-    exports.loadRoutes(cb)
-  }
-}
+/**
+ * Load the routes files
+ */
+exports.loadRoutes = function(sourceDir,cb) {
 
-exports.loadRoutes = function(cb) {
+  var routesFile = sourceDir+'/'+constants.source+constants.files.routes;
 
-  if (!ready) throw new Error("Library must be initialized first")
-
-  // if project config is not loaded, load it and try again
-  if (!exports.projectConfig) {
-    exports.loadConfig(function() {
-      exports.loadRoutes(cb)
-    })
-    return;
-  }
-
-  var routesFile = exports.projectConfig.source + exports.appConfig.files.routes;
-
-  console.log("Routes file: " + routesFile)
+  console.log("Looking for routes in " + routesFile)
 
   fs.readFile(routesFile,'utf-8',function (er, data) {
-
     // TODO: handle parse errors
     exports.routes = JSON.parse(data)
     cb(exports.routes)
-
   });
-
 
 }
