@@ -17,12 +17,14 @@ var constants = {
   }
 }
 
+exports.srcDir = constants.srcDir
+
 /**
  * Load the app definition file
  */
 exports.loadDefinition = function(sourceDir,cb) {
 
-  var definitionFile = sourceDir+'/'+constants.source+constants.files.makomi;
+  var definitionFile = sourceDir+constants.files.makomi;
 
   fs.readFile(definitionFile,'utf-8',function (er, data) {
     // TODO: handle parsing errors
@@ -37,7 +39,7 @@ exports.loadDefinition = function(sourceDir,cb) {
  */
 exports.loadRoutes = function(sourceDir,cb) {
 
-  var routesFile = sourceDir+'/'+constants.source+constants.files.routes;
+  var routesFile = sourceDir+constants.files.routes;
 
   console.log("Looking for routes in " + routesFile)
 
