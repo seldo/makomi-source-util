@@ -3,7 +3,8 @@
  */
 
 var fs = require('fs-extra'),
-  htmlparser = require('htmlparser');
+  htmlparser = require('htmlparser'),
+  _ = require('underscore');
 
 /**
  * Where to find various important files. Always the same.
@@ -26,6 +27,7 @@ exports.srcDir = constants.srcDir
 exports.loadDefinition = function(sourceDir,cb) {
 
   var definitionFile = sourceDir+constants.files.makomi;
+  console.log("Definition file in " + definitionFile)
 
   fs.readFile(definitionFile,'utf-8',function (er, data) {
     // TODO: handle parsing errors
@@ -68,10 +70,13 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
 
   // pre-process the source to add IDs
   fs.copy(sourceDir,scratchSource,function(){
-    exports.idify(scratchSource,function(idMap) {
+    console.log("Copied app from " + sourceDir + " to " + scratchSource)
+    exports.idify(scratchSource,function(fileMap,idMap) {
+      console.log("ID-ified source in " + scratchSource)
       mkEx.generate(scratchSource,scratchApp,"all",function() {
         // send the source map back so peeps can use it
-        cb(idMap)
+        console.log("Generated app in " + scratchSource + " as " + scratchApp)
+        cb(fileMap,idMap)
       })
     })
   })
@@ -87,10 +92,15 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
 exports.idify = function(scratchSource,cb) {
   var viewDir = scratchSource + 'views/'
 
-  var recursiveModify = function(dir,cb) {
-    fs.readdir(dir,function(er,files) {
+  var recursiveModify = function(path,cb) {
 
-      // TODO: build a tree
+    // holds the annotated tree structures of every file and path
+    var fileMaps = {}
+    // holds all the IDs mapped back to the file that contains them
+    var idMap = {}
+
+    var fullPath = viewDir + path
+    fs.readdir(fullPath,function(er,files) {
 
       var count = files.length
       var complete = function() {
@@ -99,22 +109,19 @@ exports.idify = function(scratchSource,cb) {
       }
 
       files.forEach(function(file) {
-        fs.stat(dir+'/'+file,function(er,stats) {
+        var filePath = path+'/'+file
+        fs.stat(fullPath+filePath,function(er,stats) {
           if(stats.isDirectory()) {
             // it's a folder, so recurse
-            recursiveModify(dir+'/'+file,function() {
+            recursiveModify(filePath,function() {
               complete()
             })
           } else {
             // it's a file, so parse and modify
-            parseFile(dir+'/'+file,function(dom) {
-              addIds(dom,function(newDom) {
-                toHtml(newDom,function(html) {
-                  fs.writeFile(dir+'/'+file,html,function() {
-                    complete()
-                  })
-                })
-              })
+            exports.addIdsToFile(fullPath,filePath,function(annotatedDom,newIds) {
+              fileMaps[filePath] = annotatedDom
+              _.extend(idMap,newIds)
+              complete()
             })
           }
         })
@@ -122,4 +129,113 @@ exports.idify = function(scratchSource,cb) {
     })
   }
 
+}
+
+/**
+ * Read in a single file, parse the HTML
+ * Add unique IDs to all elements
+ * Return the parsed DOM structure and a list of the new IDs mapped to the path of the file
+ * @param fullPath
+ * @param filePath
+ * @param cb
+ */
+exports.addIdsToFile = function(fullPath,filePath,cb) {
+  parseFile(fullPath+filePath,function(er,dom) {
+    // TODO: handle errors
+    addIds(dom,function(newDom) {
+      toHtml(newDom,function(html) {
+        fs.writeFile(dir+'/'+file,html,function() {
+          complete()
+        })
+      })
+    })
+  })
+}
+
+/**
+ * Take a DOM tree and write an HTML file to disk
+ * @param path
+ * @param dom
+ * @param cb
+ */
+var writeHtml = function(path,dom,cb) {
+  toHtml(dom,function(er,html) {
+    fs.writeFile(path,html,function(er) {
+      if (er) throw er;
+    });
+  })
+}
+
+/**
+ * Take a dom tree, return a (nicely formatted) string of HTML.
+ * Recursive.
+ * @param dom
+ * @param cb
+ * @param depth
+ */
+var toHtml = function(dom,cb,depth) {
+  if (!depth) depth = 0;
+
+  var er = null; // TODO: error handling
+  var output = "";
+
+  // counter+callback idiom
+  var count = dom.length
+  var complete = function() {
+    count--;
+    if (count == 0) {
+      cb(er,output)
+    }
+  }
+
+  // FIXME: this doesn't produce elements out of order but I'm not sure why
+  dom.forEach(function(element,index) {
+    switch(element.type) {
+      case "comment":
+        output += "<!-- " + element.raw + " -->"
+        complete()
+        break;
+      case "directive":
+        output += "<!" + element.raw + ">"
+        complete();
+        break;
+      case "tag":
+        output += "<" + element.raw + ">"
+        var endTag = function() {
+          output += "</" + element.name + ">"
+        }
+        if (element.children) {
+          toHtml(element.children,function(er,html) {
+            output += html
+            endTag()
+            complete()
+          },depth+2)
+        } else {
+          endTag()
+          complete()
+        }
+        break;
+      default:
+        output += element.raw
+        complete()
+        break;
+    }
+  })
+
+}
+
+/**
+ * Read HTML from disk and parse into DOM structure
+ * @param filename
+ * @param cb
+ */
+var parseFile = function(path,cb) {
+  fs.readFile(path,'utf-8',function(er,rawHtml) {
+    // get HTMLparser to do the heavy lifting
+    var handler = new htmlparser.DefaultHandler(function (er, dom) {
+      cb(er,dom)
+    });
+    var parser = new htmlparser.Parser(handler);
+    parser.parseComplete(rawHtml);
+  })
 }

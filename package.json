@@ -6,6 +6,10 @@
   },
   "dependencies": {
     "fs-extra": "*",
-    "htmlparser": "*"
+    "htmlparser": "*",
+    "hashids": "*"
+  },
+  "devDependencies": {
+    "tape": "*"
   }
 }
