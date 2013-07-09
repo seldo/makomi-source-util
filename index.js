@@ -92,7 +92,8 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
  * @param cb
  */
 exports.idify = function(scratchSource,cb) {
-  var viewDir = scratchSource + 'views/'
+
+  var viewDir = scratchSource + 'views'
 
   var recursiveModify = function(path,cb) {
 
@@ -102,17 +103,23 @@ exports.idify = function(scratchSource,cb) {
     var idMap = {}
 
     var fullPath = viewDir + path
+    console.log("Looking in path " + fullPath)
     fs.readdir(fullPath,function(er,files) {
 
       var count = files.length
       var complete = function() {
         count--
-        if (count == 0) cb()
+        if (count == 0) cb(fileMaps,idMap)
       }
 
       files.forEach(function(file) {
         var filePath = path+'/'+file
         fs.stat(fullPath+filePath,function(er,stats) {
+          if (er) {
+            console.log("Could not stat view directory: " + er)
+            complete()
+            return;
+          }
           if(stats.isDirectory()) {
             // it's a folder, so recurse
             recursiveModify(filePath,function() {
@@ -131,6 +138,11 @@ exports.idify = function(scratchSource,cb) {
     })
   }
 
+  // start at root of view dir
+  recursiveModify('',function(fileMaps,idMap) {
+    cb(fileMaps,idMap)
+  })
+
 }
 
 /**
@@ -147,7 +159,6 @@ exports.addIdsToFile = function(basePath,filePath,cb) {
     // TODO: handle errors
     exports.addIds(filePath,dom,function(newDom,newIds) {
       writeHtml(fullPath,newDom,function() {
-        console.log("Wrote HTML to " + fullPath)
         cb(newDom,newIds)
       })
     })
@@ -169,8 +180,6 @@ exports.addIds = function(path,dom,cb) {
   var complete = function() {
     count--
     if (count == 0) {
-      console.log("Passing back dom")
-      console.log(util.inspect(dom,{depth:null}))
       cb(dom,ids)
     }
   }
@@ -212,6 +221,7 @@ var writeHtml = function(path,dom,cb) {
   toHtml(dom,function(er,html) {
     fs.writeFile(path,html,function(er) {
       if (er) throw er;
+      cb()
     });
   })
 }
@@ -250,7 +260,6 @@ var toHtml = function(dom,cb,depth) {
         complete();
         break;
       case "tag":
-        console.log(element)
         output += "<" + element.name
         if (element.attribs) {
           output += " " + _.map(element.attribs,function(attribVal,attrib,element) {
