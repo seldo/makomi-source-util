@@ -4,7 +4,9 @@
 
 var fs = require('fs-extra'),
   htmlparser = require('htmlparser'),
-  _ = require('underscore');
+  shortid = require('short-id'),
+  _ = require('underscore'),
+  util = require('util');
 
 /**
  * Where to find various important files. Always the same.
@@ -139,17 +141,65 @@ exports.idify = function(scratchSource,cb) {
  * @param filePath
  * @param cb
  */
-exports.addIdsToFile = function(fullPath,filePath,cb) {
-  parseFile(fullPath+filePath,function(er,dom) {
+exports.addIdsToFile = function(basePath,filePath,cb) {
+  var fullPath = basePath+filePath
+  parseFile(fullPath,function(er,dom) {
     // TODO: handle errors
-    addIds(dom,function(newDom) {
-      toHtml(newDom,function(html) {
-        fs.writeFile(dir+'/'+file,html,function() {
-          complete()
-        })
+    exports.addIds(filePath,dom,function(newDom,newIds) {
+      writeHtml(fullPath,newDom,function() {
+        console.log("Wrote HTML to " + fullPath)
+        cb(newDom,newIds)
       })
     })
   })
+}
+
+/**
+ * Recursively add unique makomi IDs to any elements which do not
+ * already have one.
+ * @param path
+ * @param dom
+ * @param cb
+ */
+exports.addIds = function(path,dom,cb) {
+
+  var ids = {}
+
+  var count = dom.length
+  var complete = function() {
+    count--
+    if (count == 0) {
+      console.log("Passing back dom")
+      console.log(util.inspect(dom,{depth:null}))
+      cb(dom,ids)
+    }
+  }
+
+  dom.forEach(function(element,index) {
+    if (element.type != 'tag') {
+      complete();
+      return
+    }
+    // handle children
+    if (element.children) {
+      count++
+      exports.addIds(path,element.children,function(childDom,childIds) {
+        dom[index].children = childDom
+        _.extend(ids,childIds)
+        complete()
+      })
+    }
+    // handle element itself
+    if (!element.attribs) element.attribs = {}
+    if (!element.attribs['makomi-id']) {
+      element.attribs['makomi-id'] = shortid.generate()
+    }
+    // "this ID will be found in this file"
+    ids[element.attribs['makomi-id']] = path
+    // TODO: do we need to refer to the element directly here?
+    complete()
+  })
+
 }
 
 /**
@@ -196,11 +246,18 @@ var toHtml = function(dom,cb,depth) {
         complete()
         break;
       case "directive":
-        output += "<!" + element.raw + ">"
+        output += "<" + element.raw + ">"
         complete();
         break;
       case "tag":
-        output += "<" + element.raw + ">"
+        console.log(element)
+        output += "<" + element.name
+        if (element.attribs) {
+          output += " " + _.map(element.attribs,function(attribVal,attrib,element) {
+            return attrib + '="' + attribVal + '"'
+          }).join(" ")
+        }
+        output += ">"
         var endTag = function() {
           output += "</" + element.name + ">"
         }
