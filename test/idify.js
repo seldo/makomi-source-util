@@ -10,17 +10,18 @@ var _ = require('underscore')
 
 test('id-ify all the files in a directory', function (t) {
 
-  t.plan(2);
+  t.plan(1);
 
   var indir = "./test/data/"
   var outdir = "/tmp/idify/"
+  var copyDest = outdir + 'views/'
 
-  fs.copy(indir,outdir+'views/',function() {
-    mkSrc.idify(outdir,function(fileMaps,idMap) {
-      console.log("Filemap:")
-      console.log(util.inspect(fileMaps,{depth:null}))
-      console.log("IDmap:")
-      console.log(idMap)
+  fs.mkdirs(copyDest,function() {
+    fs.copy(indir,copyDest,function() {
+      mkSrc.idify(outdir,function(fileMaps,idMap) {
+        // verify expected number of IDs in map
+        t.equals(_.size(idMap),46)
+      })
     })
   })
 

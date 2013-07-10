@@ -109,25 +109,29 @@ exports.idify = function(scratchSource,cb) {
       var count = files.length
       var complete = function() {
         count--
-        if (count == 0) cb(fileMaps,idMap)
+        if (count == 0) {
+          cb(fileMaps,idMap)
+        }
       }
 
       files.forEach(function(file) {
         var filePath = path+'/'+file
-        fs.stat(fullPath+filePath,function(er,stats) {
+        fs.stat(viewDir+filePath,function(er,stats) {
           if (er) {
-            console.log("Could not stat view directory: " + er)
+            console.log("Could not stat file: " + er)
             complete()
             return;
           }
           if(stats.isDirectory()) {
             // it's a folder, so recurse
-            recursiveModify(filePath,function() {
+            recursiveModify(filePath,function(childFiles,childIds) {
+              _.extend(fileMaps,childFiles)
+              _.extend(idMap,childIds)
               complete()
             })
           } else {
             // it's a file, so parse and modify
-            exports.addIdsToFile(fullPath,filePath,function(annotatedDom,newIds) {
+            exports.addIdsToFile(viewDir,filePath,function(annotatedDom,newIds) {
               fileMaps[filePath] = annotatedDom
               _.extend(idMap,newIds)
               complete()
