@@ -49,8 +49,6 @@ exports.loadRoutes = function(sourceDir,cb) {
 
   var routesFile = sourceDir+constants.files.routes;
 
-  console.log("Looking for routes in " + routesFile)
-
   fs.readFile(routesFile,'utf-8',function (er, data) {
     // TODO: handle parse errors
     exports.routes = JSON.parse(data)
