@@ -60,6 +60,29 @@ exports.loadRoutes = function(sourceDir,cb) {
 }
 
 /**
+ * Get the object defining a controller
+ * @param sourceDir
+ * @param controller
+ * @param action
+ * @param cb
+ */
+exports.loadController = function(sourceDir,controller,action,cb) {
+  console.log("Loading " + action + " in controller " + controller)
+
+  fs.readFile(
+    sourceDir+'controllers/'+controller+'/'+action+'.json',
+    'utf-8',
+    function(er,data) {
+      if (er || !data) {
+        cb({error:"Error loading controller " + controller + "/" + action})
+      } else {
+        cb(JSON.parse(data))
+      }
+    }
+  )
+}
+
+/**
  * Prepare a source directory for editing by makomi.
  * This primarily means adding IDs to everything so the editor
  * knows how to edit things.
@@ -79,7 +102,8 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
     exports.idify(scratchSource,function(fileMap,idMap) {
       console.log("ID-ified source in " + scratchSource)
       // load the project's configured engine and generate the app
-      var engine = require(appDefinition.generators.base)
+      // FIXME: use global install or something
+      var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
       engine.generate(scratchSource,scratchApp,"all",function() {
         // npm install the app
         npm.load({prefix: scratchApp},function(er,npm){
