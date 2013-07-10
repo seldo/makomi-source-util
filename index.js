@@ -6,7 +6,8 @@ var fs = require('fs-extra'),
   htmlparser = require('htmlparser'),
   shortid = require('short-id'),
   _ = require('underscore'),
-  util = require('util');
+  util = require('util'),
+  npm = require('npm');
 
 /**
  * Where to find various important files. Always the same.
@@ -32,7 +33,9 @@ exports.loadDefinition = function(sourceDir,cb) {
   console.log("Definition file in " + definitionFile)
 
   fs.readFile(definitionFile,'utf-8',function (er, data) {
-    // TODO: handle parsing errors
+    if (er || !data) {
+      throw new Error("Could not load definition at " + definitionFile)
+    }
     exports.definition = JSON.parse(data)
     cb(exports.definition);
   });
@@ -75,8 +78,16 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
     console.log("Copied app from " + sourceDir + " to " + scratchSource)
     exports.idify(scratchSource,function(fileMap,idMap) {
       console.log("ID-ified source in " + scratchSource)
-      mkEx.generate(scratchSource,scratchApp,"all",function() {
-        // send the source map back so peeps can use it
+      // load the project's configured engine and generate the app
+      var engine = require(appDefinition.generators.base)
+      engine.generate(scratchSource,scratchApp,"all",function() {
+        // npm install the app
+        npm.load({prefix: scratchApp},function(er,npm){
+          npm.commands.install([scratchApp],function(er,data) {
+            console.log("Installed")
+          })
+        })
+        // the file map and ID map from the IDification step are useful
         console.log("Generated app in " + scratchSource + " as " + scratchApp)
         cb(fileMap,idMap)
       })
