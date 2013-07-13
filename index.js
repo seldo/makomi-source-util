@@ -6,7 +6,8 @@ var fs = require('fs-extra'),
   htmlparser = require('htmlparser'),
   shortid = require('short-id'),
   _ = require('underscore'),
-  util = require('util');
+  util = require('util'),
+  npm = require('npm');
 
 /**
  * Where to find various important files. Always the same.
@@ -32,7 +33,9 @@ exports.loadDefinition = function(sourceDir,cb) {
   console.log("Definition file in " + definitionFile)
 
   fs.readFile(definitionFile,'utf-8',function (er, data) {
-    // TODO: handle parsing errors
+    if (er || !data) {
+      throw new Error("Could not load definition at " + definitionFile)
+    }
     exports.definition = JSON.parse(data)
     cb(exports.definition);
   });
@@ -46,14 +49,35 @@ exports.loadRoutes = function(sourceDir,cb) {
 
   var routesFile = sourceDir+constants.files.routes;
 
-  console.log("Looking for routes in " + routesFile)
-
   fs.readFile(routesFile,'utf-8',function (er, data) {
     // TODO: handle parse errors
     exports.routes = JSON.parse(data)
     cb(exports.routes)
   });
 
+}
+
+/**
+ * Get the object defining a controller
+ * @param sourceDir
+ * @param controller
+ * @param action
+ * @param cb
+ */
+exports.loadController = function(sourceDir,controller,action,cb) {
+  console.log("Loading " + action + " in controller " + controller)
+
+  fs.readFile(
+    sourceDir+'controllers/'+controller+'/'+action+'.json',
+    'utf-8',
+    function(er,data) {
+      if (er || !data) {
+        cb({error:"Error loading controller " + controller + "/" + action})
+      } else {
+        cb(JSON.parse(data))
+      }
+    }
+  )
 }
 
 /**
@@ -75,8 +99,17 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
     console.log("Copied app from " + sourceDir + " to " + scratchSource)
     exports.idify(scratchSource,function(fileMap,idMap) {
       console.log("ID-ified source in " + scratchSource)
-      mkEx.generate(scratchSource,scratchApp,"all",function() {
-        // send the source map back so peeps can use it
+      // load the project's configured engine and generate the app
+      // FIXME: use global install or something
+      var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
+      engine.generate(scratchSource,scratchApp,"all",function() {
+        // npm install the app
+        npm.load({prefix: scratchApp},function(er,npm){
+          npm.commands.install([scratchApp],function(er,data) {
+            console.log("Installed")
+          })
+        })
+        // the file map and ID map from the IDification step are useful
         console.log("Generated app in " + scratchSource + " as " + scratchApp)
         cb(fileMap,idMap)
       })
@@ -109,25 +142,29 @@ exports.idify = function(scratchSource,cb) {
       var count = files.length
       var complete = function() {
         count--
-        if (count == 0) cb(fileMaps,idMap)
+        if (count == 0) {
+          cb(fileMaps,idMap)
+        }
       }
 
       files.forEach(function(file) {
         var filePath = path+'/'+file
-        fs.stat(fullPath+filePath,function(er,stats) {
+        fs.stat(viewDir+filePath,function(er,stats) {
           if (er) {
-            console.log("Could not stat view directory: " + er)
+            console.log("Could not stat file: " + er)
             complete()
             return;
           }
           if(stats.isDirectory()) {
             // it's a folder, so recurse
-            recursiveModify(filePath,function() {
+            recursiveModify(filePath,function(childFiles,childIds) {
+              _.extend(fileMaps,childFiles)
+              _.extend(idMap,childIds)
               complete()
             })
           } else {
             // it's a file, so parse and modify
-            exports.addIdsToFile(fullPath,filePath,function(annotatedDom,newIds) {
+            exports.addIdsToFile(viewDir,filePath,function(annotatedDom,newIds) {
               fileMaps[filePath] = annotatedDom
               _.extend(idMap,newIds)
               complete()

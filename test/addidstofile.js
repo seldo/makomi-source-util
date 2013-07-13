@@ -10,7 +10,7 @@ var _ = require('underscore')
 
 test('id-ify a single file', function (t) {
 
-  t.plan(2);
+  t.plan(20);
 
   var infile = "./test/data/default.html"
   var outfile = "/tmp/addidstofile.test"
@@ -20,11 +20,20 @@ test('id-ify a single file', function (t) {
   // create a working copy
   fs.copy(infile,outfile,function() {
     mkSrc.addIdsToFile('',outfile,function(annotatedDom,newIds) {
+
+      // verify as many IDs as elements
       t.equal(_.size(newIds),expectedIds)
+
       fs.readFile(outfile,'utf-8',function(er,html) {
-        // can't compare file directly because the IDs change all the time
         fs.readFile(infile,'utf-8',function(er,original) {
+
+          // verify number of lines matches original
           t.equal(html.split("\n").length,original.split("\n").length)
+
+          // verify we can find each ID in the file
+          _.each(newIds,function(value,key,ids) {
+            t.ok( html.indexOf(key) !== 0, 'found ' + key + ' in file' )
+          })
         })
       })
     })
