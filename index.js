@@ -89,7 +89,9 @@ exports.loadController = function(sourceDir,controller,action,cb) {
  * @param outputDir
  * @param cb
  */
-exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
+exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devMode) {
+
+  if (!devMode) devMode = false;
 
   var scratchSource = outputDir + '.makomi/'
   var scratchApp = outputDir + 'app/'
@@ -102,7 +104,7 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb) {
       // load the project's configured engine and generate the app
       // FIXME: use global install or something
       var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
-      engine.generate(scratchSource,scratchApp,"all",function() {
+      engine.generate(scratchSource,scratchApp,"all",devMode,function() {
         // npm install the app
         npm.load({prefix: scratchApp},function(er,npm){
           npm.commands.install([scratchApp],function(er,data) {
