@@ -257,7 +257,7 @@ exports.addIds = function(path,dom,cb) {
  * @param cb
  */
 var writeHtml = function(path,dom,cb) {
-  toHtml(dom,function(er,html) {
+  exports.toHtml(dom,function(er,html) {
     fs.writeFile(path,html,function(er) {
       if (er) throw er;
       cb()
@@ -272,7 +272,7 @@ var writeHtml = function(path,dom,cb) {
  * @param cb
  * @param depth
  */
-var toHtml = function(dom,cb,depth) {
+exports.toHtml = function(dom,cb,depth) {
   if (!depth) depth = 0;
 
   var er = null; // TODO: error handling
@@ -310,7 +310,7 @@ var toHtml = function(dom,cb,depth) {
           output += "</" + element.name + ">"
         }
         if (element.children) {
-          toHtml(element.children,function(er,html) {
+          exports.toHtml(element.children,function(er,html) {
             output += html
             endTag()
             complete()
@@ -342,5 +342,54 @@ var parseFile = function(path,cb) {
     });
     var parser = new htmlparser.Parser(handler);
     parser.parseComplete(rawHtml);
+  })
+}
+
+exports.getTree = function(idMap,fileMap,mkId) {
+  //console.log(fileMap)
+  //console.log(idMap)
+  var src = idMap[mkId];
+  if (src) {
+    console.log("found " + mkId + " in file " + src + " which looks like")
+  } else {
+    console.log(idMap)
+    throw new Error("Could not find " + mkId + " in the above ID map")
+  }
+  var srcDom = fileMap[src]
+  console.log(util.inspect(srcDom,{depth:null}))
+  return srcDom;
+}
+
+/**
+ * Wanted to use soupselect but we need to edit the element in-place
+ * @param domTree
+ * @param mkId
+ */
+exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
+
+  var count = domTree.length
+  if (count == 0) cb(domTree)
+  var complete = function() {
+    count--
+    if (count == 0) cb(domTree)
+  }
+
+  domTree.forEach(function(element,index) {
+    if(element.attribs &&
+      element.attribs['makomi-id'] &&
+      element.attribs['makomi-id'] == mkId) {
+
+      applyFn(element,function(newElement) {
+        domTree[index] = newElement
+        complete()
+      })
+    } else if (element.children && element.children.length > 0) {
+      exports.findElementAndApply(element.children,mkId,applyFn,function(newChildren) {
+        domTree[index].children = newChildren
+        complete()
+      });
+    } else {
+      complete()
+    }
   })
 }
