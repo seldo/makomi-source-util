@@ -98,9 +98,9 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devM
 
   // pre-process the source to add IDs
   fs.copy(sourceDir,scratchSource,function(){
-    console.log("Copied app from " + sourceDir + " to " + scratchSource)
+    //console.log("Copied app from " + sourceDir + " to " + scratchSource)
     exports.idify(scratchSource,function(fileMap,idMap) {
-      console.log("ID-ified source in " + scratchSource)
+      //console.log("ID-ified source in " + scratchSource)
       // load the project's configured engine and generate the app
       // FIXME: use global install or something
       var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
@@ -108,11 +108,11 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devM
         // npm install the app
         npm.load({link:true, prefix: scratchApp},function(er,npm){
           npm.commands.install([scratchApp],function(er,data) {
-            console.log("Installed")
+            console.log("App source copied, app generated and npm installed. Ready to go!")
           })
         })
         // the file map and ID map from the IDification step are useful
-        console.log("Generated app in " + scratchSource + " as " + scratchApp)
+        console.log("Generated app is in " + scratchSource + " as " + scratchApp)
         cb(fileMap,idMap)
       })
     })
@@ -194,10 +194,10 @@ exports.idify = function(scratchSource,cb) {
  */
 exports.addIdsToFile = function(basePath,filePath,cb) {
   var fullPath = basePath+filePath
-  parseFile(fullPath,function(er,dom) {
+  exports.parseFile(fullPath,function(er,dom) {
     // TODO: handle errors
     exports.addIds(filePath,dom,function(newDom,newIds) {
-      writeHtml(fullPath,newDom,function() {
+      exports.writeHtml(fullPath,newDom,function() {
         cb(newDom,newIds)
       })
     })
@@ -251,16 +251,48 @@ exports.addIds = function(path,dom,cb) {
 }
 
 /**
+ * Recursively remove makomi-id attributes from all elements
+ */
+exports.removeIds = function(dom,cb) {
+
+  var count = dom.length;
+  if (count == 0) cb([])
+  var complete = function() {
+    count--
+    if (count == 0) {
+      cb(dom)
+    }
+  }
+
+  dom.forEach(function(element,index) {
+    if (element.attribs && element.attribs['makomi-id']) {
+      console.log("Deleted")
+      delete(element.attribs['makomi-id'])
+      dom[index] = element
+    }
+    if (element.children && element.children.length > 0) {
+      exports.removeIds(element.children,function(newChildren) {
+        dom[index].children = newChildren
+        complete()
+      })
+    } else {
+      complete()
+    }
+  })
+
+}
+
+/**
  * Take a DOM tree and write an HTML file to disk
  * @param path
  * @param dom
  * @param cb
  */
-var writeHtml = function(path,dom,cb) {
+exports.writeHtml = function(path,dom,cb) {
   exports.toHtml(dom,function(er,html) {
     fs.writeFile(path,html,function(er) {
       if (er) throw er;
-      cb()
+      cb(html)
     });
   })
 }
@@ -300,7 +332,7 @@ exports.toHtml = function(dom,cb,depth) {
         break;
       case "tag":
         output += "<" + element.name
-        if (element.attribs) {
+        if (element.attribs && _.size(element.attribs) > 0) {
           output += " " + _.map(element.attribs,function(attribVal,attrib,element) {
             return attrib + '="' + attribVal + '"'
           }).join(" ")
@@ -334,7 +366,7 @@ exports.toHtml = function(dom,cb,depth) {
  * @param filename
  * @param cb
  */
-var parseFile = function(path,cb) {
+exports.parseFile = function(path,cb) {
   fs.readFile(path,'utf-8',function(er,rawHtml) {
     // get HTMLparser to do the heavy lifting
     var handler = new htmlparser.DefaultHandler(function (er, dom) {
@@ -345,18 +377,27 @@ var parseFile = function(path,cb) {
   })
 }
 
-exports.getTree = function(idMap,fileMap,mkId) {
-  //console.log(fileMap)
-  //console.log(idMap)
+exports.getSrc = function(idMap,mkId) {
   var src = idMap[mkId];
   if (src) {
     console.log("found " + mkId + " in file " + src + " which looks like")
+    return src
   } else {
     console.log(idMap)
     throw new Error("Could not find " + mkId + " in the above ID map")
   }
-  var srcDom = fileMap[src]
-  console.log(util.inspect(srcDom,{depth:null}))
+}
+
+/**
+ * Get the in-memory representation of the file which contains a given makomi ID
+ * @param idMap
+ * @param fileMap
+ * @param mkId
+ * @returns {*}
+ */
+exports.getTree = function(idMap,fileMap,mkId) {
+  var srcDom = fileMap[exports.getSrc(idMap,mkId)]
+  //console.log(util.inspect(srcDom,{depth:null}))
   return srcDom;
 }
 

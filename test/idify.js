@@ -12,7 +12,7 @@ test('id-ify all the files in a directory', function (t) {
 
   t.plan(1);
 
-  var indir = "./test/data/"
+  var indir = "./test/data/idify/"
   var outdir = "/tmp/idify/"
   var copyDest = outdir + 'views/'
 

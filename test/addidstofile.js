@@ -12,7 +12,7 @@ test('id-ify a single file', function (t) {
 
   t.plan(20);
 
-  var infile = "./test/data/default.html"
+  var infile = "./test/data/idify/default.html"
   var outfile = "/tmp/addidstofile.test"
 
   var expectedIds = 18 // the IDs themselves change every time
