@@ -106,7 +106,7 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devM
       var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
       engine.generate(scratchSource,scratchApp,"all",devMode,function() {
         // npm install the app
-        npm.load({prefix: scratchApp},function(er,npm){
+        npm.load({link:true, prefix: scratchApp},function(er,npm){
           npm.commands.install([scratchApp],function(er,data) {
             console.log("Installed")
           })
