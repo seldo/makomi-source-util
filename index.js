@@ -337,9 +337,18 @@ exports.toHtml = function(dom,cb,depth) {
             return attrib + '="' + attribVal + '"'
           }).join(" ")
         }
-        output += ">"
+        var selfClosing = false
+        if (element.raw.charAt(element.raw.length - 1) == '/') {
+          selfClosing = true
+          output += "/>"
+        } else {
+          output += ">"
+        }
         var endTag = function() {
-          output += "</" + element.name + ">"
+          // can be self-closing
+          if(!selfClosing) {
+            output += "</" + element.name + ">"
+          }
         }
         if (element.children) {
           exports.toHtml(element.children,function(er,html) {
@@ -380,7 +389,7 @@ exports.parseFile = function(path,cb) {
 exports.getSrc = function(idMap,mkId) {
   var src = idMap[mkId];
   if (src) {
-    console.log("found " + mkId + " in file " + src + " which looks like")
+    console.log("found " + mkId + " in file " + src)
     return src
   } else {
     console.log(idMap)
