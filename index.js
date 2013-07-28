@@ -105,18 +105,36 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devM
       // FIXME: use global install or something
       var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
       engine.generate(scratchSource,scratchApp,"all",devMode,function() {
-        // npm install the app
-        npm.load({link:true, prefix: scratchApp},function(er,npm){
-          npm.commands.install([scratchApp],function(er,data) {
-            console.log("App source copied, app generated and npm installed. Ready to go!")
-          })
-        })
         // the file map and ID map from the IDification step are useful
         console.log("Generated app is in " + scratchSource + " as " + scratchApp)
         cb(fileMap,idMap)
       })
     })
   })
+}
+
+/**
+ * Create a full working version of the app, ready to run.
+ * @param appDefinition
+ * @param sourceDir
+ * @param outputDir
+ * @param cb
+ */
+exports.generateFullApp = function(appDefinition,sourceDir,outputDir,cb) {
+
+  // TODO: once we're more confident about the generation process, output to the outputDir root
+  var scratchApp = outputDir + 'app/'
+
+  exports.generateWorkingCopy(appDefinition,sourceDir,outputDir,function(fileMap,idMap) {
+    // npm install the app
+    npm.load({link:true, prefix: scratchApp},function(er,npm){
+      npm.commands.install([scratchApp],function(er,data) {
+        console.log("npm installed. Ready to go!")
+        cb(fileMap,idMap)
+      })
+    })
+  })
+
 }
 
 /**
