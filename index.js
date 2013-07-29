@@ -31,7 +31,6 @@ exports.srcDir = constants.srcDir
 exports.loadDefinition = function(sourceDir,cb) {
 
   var definitionFile = sourceDir+constants.files.makomi;
-  console.log("Definition file in " + definitionFile)
 
   fs.readFile(definitionFile,'utf-8',function (er, data) {
     if (er || !data) {
@@ -90,32 +89,40 @@ exports.loadController = function(sourceDir,controller,action,cb) {
  * @param outputDir
  * @param cb
  */
-exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devMode) {
-
-  if (!devMode) devMode = false;
-
-  var scratchSource = outputDir + '.makomi/'
-  var scratchApp = outputDir + 'app/'
+exports.generateWorkingCopy = function(sourceDir,outputDir,cb) {
 
   // pre-process the source to add IDs
-  fs.copy(sourceDir,scratchSource,function(){
-    //console.log("Copied app from " + sourceDir + " to " + scratchSource)
-    exports.idify(scratchSource,function(fileMap,idMap) {
-      //console.log("ID-ified source in " + scratchSource)
-      // load the project's configured engine and generate the app
-      // FIXME: use global install or something
-      var engine = require("/usr/local/lib/node_modules/" + appDefinition.generators.base)
-      engine.generate(scratchSource,scratchApp,"all",devMode,function() {
-        // the file map and ID map from the IDification step are useful
-        console.log("Generated app is in " + scratchSource + " as " + scratchApp)
-        cb(fileMap,idMap)
-      })
+  fs.copy(sourceDir,outputDir,function(){
+    exports.idify(outputDir,function(fileMap,idMap) {
+      cb(fileMap,idMap)
     })
   })
 }
 
 /**
- * Create a full working version of the app, ready to run.
+ * Replaces the existing file in the source
+ * @param appDefinition
+ * @param sourceDir
+ * @param fileToUpdate The location of the file in the view folder
+ * @param newDom
+ * @param cb
+ */
+exports.updateViewFile = function(sourceDir,fileToUpdate,newDom,cb) {
+
+  // FIXME: hard-coding location
+  var viewSource = sourceDir + '.makomi/views'
+  var fullPath = viewSource + fileToUpdate
+
+  // convert the dom into html and write it to the given location
+  // we assume it is already fully id-ified
+  exports.writeHtml(fullPath,newDom,function(html) {
+    cb()
+  })
+}
+
+/**
+ * Create a full working version of the app, and npm install it.
+ * Produces a ready-to-run copy of the app.
  * @param appDefinition
  * @param sourceDir
  * @param outputDir
@@ -123,11 +130,12 @@ exports.generateWorkingCopy = function(appDefinition,sourceDir,outputDir,cb,devM
  */
 exports.generateFullApp = function(appDefinition,sourceDir,outputDir,cb) {
 
-  // TODO: once we're more confident about the generation process, output to the outputDir root
+  // FIXME: hard-coding location
   var scratchApp = outputDir + 'app/'
 
   exports.generateWorkingCopy(appDefinition,sourceDir,outputDir,function(fileMap,idMap) {
     // npm install the app
+    // FIXME: link isn't doing what we want here
     npm.load({link:true, prefix: scratchApp},function(er,npm){
       npm.commands.install([scratchApp],function(er,data) {
         console.log("npm installed. Ready to go!")
@@ -157,7 +165,6 @@ exports.idify = function(scratchSource,cb) {
     var idMap = {}
 
     var fullPath = viewDir + path
-    console.log("Looking in path " + fullPath)
     fs.readdir(fullPath,function(er,files) {
 
       var count = files.length
@@ -302,6 +309,40 @@ exports.removeIds = function(dom,cb) {
 }
 
 /**
+ * Generate a mini-idMap for the given dom, to be spliced into a bigger one
+ * @param path
+ */
+exports.createIdMap = function(path,dom,cb) {
+
+  var idMap = {}
+
+  var count = dom.length;
+  if (count == 0) cb([])
+  var complete = function() {
+    count--
+    if (count == 0) {
+      cb(idMap)
+    }
+  }
+
+  dom.forEach(function(element,index) {
+    if (element.attribs && element.attribs['makomi-id']) {
+      idMap[element.attribs['makomi-id']] = path
+    }
+    if (element.children && element.children.length > 0) {
+      exports.createIdMap(path,element.children,function(childIdMap) {
+        _.extend(idMap,childIdMap)
+        complete()
+      })
+    } else {
+      complete()
+    }
+  })
+
+
+}
+
+/**
  * Take a DOM tree and write an HTML file to disk
  * @param path
  * @param dom
@@ -323,11 +364,7 @@ exports.writeHtml = function(path,dom,cb) {
  * @param cb
  */
 exports.writeStrippedHtml = function(path,dom,cb) {
-  //console.log("Found element " + mkId + " and changed it to ")
-  //console.log(util.inspect(newDom,{depth:null}))
   exports.removeIds(dom,function(strippedDom) {
-    //console.log("In-memory representation updated. Save to disk!")
-    //console.log(util.inspect(strippedDom,{depth:null}))
     exports.writeHtml(path,strippedDom,function(html) {
       cb(html)
     })
@@ -443,7 +480,6 @@ exports.getSrc = function(idMap,mkId) {
  */
 exports.getTree = function(idMap,fileMap,mkId) {
   var srcDom = fileMap[exports.getSrc(idMap,mkId)]
-  //console.log(util.inspect(srcDom,{depth:null}))
   return srcDom;
 }
 
@@ -465,8 +501,6 @@ exports.setTextContent = function(domTree,mkId,newContent,cb) {
     cb([element]);
   }
 
-  //console.log("Tree before change is ")
-  //console.log(util.inspect(domTree,{depth:null}))
   exports.findElementAndApply(domTree,mkId,changeFn,function(newDom){
     cb(newDom)
   })
@@ -540,7 +574,6 @@ exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
       applyFn(element,function(newElements) {
         betterSplice.splice(domTree,index,1,newElements)
         // finish early
-        console.log("Spliced!")
         count=1
         complete()
       })
