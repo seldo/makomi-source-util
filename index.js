@@ -7,7 +7,8 @@ var fs = require('fs-extra'),
   shortid = require('short-id'),
   _ = require('underscore'),
   util = require('util'),
-  npm = require('npm');
+  npm = require('npm'),
+  betterSplice = require('array-splice');
 
 /**
  * Where to find various important files. Always the same.
@@ -316,6 +317,24 @@ exports.writeHtml = function(path,dom,cb) {
 }
 
 /**
+ * Like writeHtml, expect it strips makomi-id attributes before writing.
+ * @param path
+ * @param dom
+ * @param cb
+ */
+exports.writeStrippedHtml = function(path,dom,cb) {
+  //console.log("Found element " + mkId + " and changed it to ")
+  //console.log(util.inspect(newDom,{depth:null}))
+  exports.removeIds(dom,function(strippedDom) {
+    //console.log("In-memory representation updated. Save to disk!")
+    //console.log(util.inspect(strippedDom,{depth:null}))
+    exports.writeHtml(path,strippedDom,function(html) {
+      cb(html)
+    })
+  })
+}
+
+/**
  * Take a dom tree, return a (nicely formatted) string of HTML.
  * Recursive.
  * @param dom
@@ -429,9 +448,80 @@ exports.getTree = function(idMap,fileMap,mkId) {
 }
 
 /**
- * Wanted to use soupselect but we need to edit the element in-place
+ * Modify the (top-level) text content of a given node.
  * @param domTree
  * @param mkId
+ * @param newContent
+ * @param cb
+ */
+exports.setTextContent = function(domTree,mkId,newContent,cb) {
+
+  var changeFn = function(element,cb) {
+    // we look for the first text element and change that.
+    // FIXME: this needs to be much more sophisticated than just "element 0"
+    element.children[0].raw = newContent
+    element.children[0].data = newContent
+    // findElementAndApply expects an array of elements to splice in
+    cb([element]);
+  }
+
+  //console.log("Tree before change is ")
+  //console.log(util.inspect(domTree,{depth:null}))
+  exports.findElementAndApply(domTree,mkId,changeFn,function(newDom){
+    cb(newDom)
+  })
+
+}
+
+/**
+ * Insert an element as a sibling of the target, immediately before the target
+ * in the tree.
+ * @param domTree
+ * @param mkId
+ * @param newContent
+ * @param cb
+ */
+exports.insertBefore = function(domTree,mkId,newContent,cb) {
+
+  var changeFn = function(element,cb) {
+    // we push our element on to the end of the new content
+    newContent.push(element)
+    cb(newContent)
+  }
+
+  exports.findElementAndApply(domTree,mkId,changeFn,function(newDom) {
+    cb(newDom)
+  })
+
+}
+
+/**
+ * Remove the target element (and all its children) from the tree.
+ * @param domTree
+ * @param mkId
+ * @param cb
+ */
+exports.remove = function(domTree,mkId,cb) {
+
+  var changeFn = function(element,cb) {
+    cb([]) // that was also pretty easy
+  }
+
+  exports.findElementAndApply(domTree,mkId,changeFn,function(newDom) {
+    cb(newDom)
+  })
+
+}
+
+/**
+ * Locate the element identified by makomi-id in a dom tree and
+ * replace it with the output of applyFn.
+ * The element can be modified, deleted, or replaced by an arbitrary
+ * number of additional elements.
+ * @param domTree
+ * @param mkId
+ * @param applyFn
+ * @param cb
  */
 exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
 
@@ -447,8 +537,11 @@ exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
       element.attribs['makomi-id'] &&
       element.attribs['makomi-id'] == mkId) {
 
-      applyFn(element,function(newElement) {
-        domTree[index] = newElement
+      applyFn(element,function(newElements) {
+        betterSplice.splice(domTree,index,1,newElements)
+        // finish early
+        console.log("Spliced!")
+        count=1
         complete()
       })
     } else if (element.children && element.children.length > 0) {

@@ -9,7 +9,8 @@
     "htmlparser": "*",
     "short-id": "*",
     "underscore": "*",
-    "npm": "*"
+    "npm": "*",
+    "array-splice": "*"
   },
   "devDependencies": {
     "tape": "*"
