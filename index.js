@@ -292,7 +292,6 @@ exports.removeIds = function(dom,cb) {
 
   dom.forEach(function(element,index) {
     if (element.attribs && element.attribs['makomi-id']) {
-      console.log("Deleted")
       delete(element.attribs['makomi-id'])
       dom[index] = element
     }
@@ -560,10 +559,15 @@ exports.remove = function(domTree,mkId,cb) {
 exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
 
   var count = domTree.length
+  var doneFn = function() {}
   if (count == 0) cb(domTree)
-  var complete = function() {
+  var complete = function(done) {
+    if (typeof(done) != 'undefined') doneFn = done
     count--
-    if (count == 0) cb(domTree)
+    if (count == 0) {
+      doneFn()
+      cb(domTree)
+    }
   }
 
   domTree.forEach(function(element,index) {
@@ -572,10 +576,11 @@ exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
       element.attribs['makomi-id'] == mkId) {
 
       applyFn(element,function(newElements) {
-        betterSplice.splice(domTree,index,1,newElements)
-        // finish early
-        count=1
-        complete()
+        complete(function() {
+          // we don't splice until we're done going through the array
+          // because any other way leads to madness
+          betterSplice.splice(domTree,index,1,newElements)
+        })
       })
     } else if (element.children && element.children.length > 0) {
       exports.findElementAndApply(element.children,mkId,applyFn,function(newChildren) {
