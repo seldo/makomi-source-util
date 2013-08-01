@@ -537,7 +537,7 @@ exports.insertBefore = function(domTree,mkId,newContent,cb) {
 exports.remove = function(domTree,mkId,cb) {
 
   var changeFn = function(element,cb) {
-    cb([]) // that was also pretty easy
+    cb([]) // that was easy
   }
 
   exports.findElementAndApply(domTree,mkId,changeFn,function(newDom) {
@@ -545,6 +545,25 @@ exports.remove = function(domTree,mkId,cb) {
   })
 
 }
+
+/**
+ * Replace the element with a different tree
+ * @param domTree
+ * @param mkId
+ * @param cb
+ */
+exports.replace = function(domTree,mkId,newDom,cb) {
+
+  var changeFn = function(element,cb) {
+    cb(newDom) // that was also pretty easy
+  }
+
+  exports.findElementAndApply(domTree,mkId,changeFn,function(newDom) {
+    cb(newDom)
+  })
+
+}
+
 
 /**
  * Locate the element identified by makomi-id in a dom tree and
