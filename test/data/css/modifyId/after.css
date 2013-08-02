@@ -1,0 +1,19 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+#xxxx1 {
+  font-family: Arial,sans-serif;
+  font-size: 100px;
+  position: relative;
+  left: 200px;
+  top: 100px;
+}
+
+#xxxx2 {
+  font-family: Verdana;
+  position: relative;
+  width: 10px;
+  color: blue;
+}

@@ -8,7 +8,8 @@ var fs = require('fs-extra'),
   _ = require('underscore'),
   util = require('util'),
   npm = require('npm'),
-  betterSplice = require('array-splice');
+  betterSplice = require('array-splice'),
+  css = require('css');
 
 /**
  * Where to find various important files. Always the same.
@@ -459,6 +460,12 @@ exports.parseFile = function(path,cb) {
   })
 }
 
+/**
+ * Return the identifier of the file that contains the given makomi ID
+ * @param idMap
+ * @param mkId
+ * @returns {*}
+ */
 exports.getSrc = function(idMap,mkId) {
   var src = idMap[mkId];
   if (src) {
@@ -610,4 +617,96 @@ exports.findElementAndApply = function(domTree,mkId,applyFn,cb) {
       complete()
     }
   })
+}
+
+/**
+ * Utility functions for CSS handling
+ */
+exports.css = {}
+
+/**
+ * Parse CSS into an object
+ */
+exports.css.parse = function(path,cb) {
+  fs.readFile(path,'utf-8',function(er,rawCss) {
+    var parsed = css.parse(rawCss)
+    cb(parsed)
+  })
+}
+
+/**
+ * Write CSS object back to a file
+ * @param obj
+ * @param path
+ * @param cb
+ */
+exports.css.write = function(path,obj,cb) {
+  var stringified = css.stringify(obj);
+  fs.writeFile(path,stringified,function(er) {
+    if (er) throw er;
+    cb(stringified)
+  });
+}
+
+/**
+ * Find a rule that applies to a specific dom ID and set properties.
+ * Existing properties are left unchanged. Properties set to null or
+ * empty string will be deleted.
+ * @param id
+ * @param properties
+ * @param cb
+ */
+exports.css.modifyId = function(tree,id,properties,cb) {
+
+  var modifyFn = function(declarations) {
+
+    // modify any existing properties
+    _.map(declarations,function(declaration,index) {
+      var propertyName = declaration.property
+      if (properties.hasOwnProperty(propertyName)) {
+        if (declaration.value === null || declaration.value === '') {
+          declaration = null
+        } else {
+          declaration.value = properties[propertyName]
+        }
+        delete(properties[propertyName])
+      }
+      return declaration;
+    })
+
+    // append any new properties
+    _.each(properties,function(value,propertyName) {
+      declarations.push({
+        "type": "declaration",
+        "property": propertyName,
+        "value": value
+      })
+    })
+
+    return declarations;
+
+  }
+
+  var newTree = exports.css.findRuleAndApply(tree,'#'+id,modifyFn)
+  cb(newTree)
+
+}
+
+/**
+ * CSS is both simpler and dumber than HTML. We can find IDs very simply,
+ * but we cannot find them quickly.
+ * @param tree
+ * @param id
+ * @param applyFn
+ * @param cb
+ */
+exports.css.findRuleAndApply = function(tree,selector,applyFn,cb) {
+  //console.log(util.inspect(tree,{depth:null}))
+  _.map(tree.stylesheet.rules,function(rule,index) {
+    if (_.contains(rule['selectors'],selector)) {
+      rule.declarations = applyFn(rule.declarations)
+    }
+    return rule;
+  })
+  return tree;
 }

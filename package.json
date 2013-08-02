@@ -10,7 +10,8 @@
     "short-id": "*",
     "underscore": "*",
     "npm": "*",
-    "array-splice": "*"
+    "array-splice": "*",
+    "css": "*"
   },
   "devDependencies": {
     "tape": "*"
