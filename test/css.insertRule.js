@@ -1,5 +1,5 @@
 /**
- * Parse a CSS file, modify
+ * Parse a CSS file, add a new rule.
  */
 var test = require('tape');
 var mkSrc = require('../index.js');
@@ -8,23 +8,24 @@ var util = require('util');
 var _ = require('underscore')
 var testUtil = require('./util.js')
 
-test('parse a CSS file and re-output it', function (t) {
+test('add a new rule to a CSS file', function (t) {
 
   t.plan(1);
 
-  var inFile = "./test/data/css/modifyId/before.css"
-  var expectedFile = "./test/data/css/modifyId/after.css"
-  var outFile = "/tmp/modifyId.css"
-  var targetId = "xxxx1"
+  var inFile = "./test/data/css/insertRule/before.css"
+  var expectedFile = "./test/data/css/insertRule/after.css"
+  var outFile = "/tmp/insertRule.css"
+  var newSelector = "#xxxx3"
   var newProperties = {
-    "position": "relative",
-    "left": "200px",
-    "top": "100px"
+    "font-family": "Times New Roman",
+    "-moz-border-radius": "10px",
+    "border-radius": "10px",
+    "overflow-x": "hidden"
   }
 
   testUtil.compareToExpectedOutput(t,expectedFile,function(cb) {
     mkSrc.css.parse(inFile,function(css) {
-      var newCss = mkSrc.css.modifyId(css,targetId,newProperties);
+      var newCss = mkSrc.css.insertRule(css,newSelector,newProperties)
       mkSrc.css.write(outFile,newCss,function(rawCss) {
         console.log("Wrote CSS " + rawCss)
         cb(rawCss)

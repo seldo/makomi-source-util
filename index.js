@@ -649,6 +649,32 @@ exports.css.write = function(path,obj,cb) {
 }
 
 /**
+ * If a stylesheet has a rule for this DOM id, modify it, otherwise
+ * create a new rule for this DOM id.
+ * @param tree
+ * @param id
+ * @param properties
+ */
+exports.css.insertOrModifyId = function(tree,id,properties) {
+  return exports.css.insertOrModify(tree,'#'+id,properties)
+}
+
+/**
+ * If a stylesheet has a matching rule, modify it, otherwise insert
+ * a new rule
+ * @param tree
+ * @param selector
+ * @param properties
+ */
+exports.css.insertOrModify = function(tree,selector,properties) {
+  if (exports.css.hasRule(tree,selector)) {
+    return exports.css.modify(tree,selector,properties)
+  } else {
+    return exports.css.insertRule(tree,selector,properties)
+  }
+}
+
+/**
  * Find a rule that applies to a specific dom ID and set properties.
  * Existing properties are left unchanged. Properties set to null or
  * empty string will be deleted.
@@ -656,7 +682,18 @@ exports.css.write = function(path,obj,cb) {
  * @param properties
  * @param cb
  */
-exports.css.modifyId = function(tree,id,properties,cb) {
+exports.css.modifyId = function(tree,id,properties) {
+  return exports.css.modify(tree,'#'+id,properties)
+}
+
+/**
+ * Find a rule matching a selector and update the properties.
+ * @param tree
+ * @param id
+ * @param properties
+ * @returns {*}
+ */
+exports.css.modify = function(tree,selector,properties) {
 
   var modifyFn = function(declarations) {
 
@@ -687,8 +724,7 @@ exports.css.modifyId = function(tree,id,properties,cb) {
 
   }
 
-  var newTree = exports.css.findRuleAndApply(tree,'#'+id,modifyFn)
-  cb(newTree)
+  return exports.css.findRuleAndApply(tree,selector,modifyFn)
 
 }
 
@@ -698,9 +734,8 @@ exports.css.modifyId = function(tree,id,properties,cb) {
  * @param tree
  * @param id
  * @param applyFn
- * @param cb
  */
-exports.css.findRuleAndApply = function(tree,selector,applyFn,cb) {
+exports.css.findRuleAndApply = function(tree,selector,applyFn) {
   //console.log(util.inspect(tree,{depth:null}))
   _.map(tree.stylesheet.rules,function(rule,index) {
     if (_.contains(rule['selectors'],selector)) {
@@ -709,4 +744,69 @@ exports.css.findRuleAndApply = function(tree,selector,applyFn,cb) {
     return rule;
   })
   return tree;
+}
+
+/**
+ * Like insertRule, except it assumes the selector is an ID.
+ * @param tree
+ * @param id
+ * @param properties
+ */
+exports.css.insertId = function(tree,id,properties) {
+  return exports.css.insertRule(tree,'#'+id,properties);
+}
+
+/**
+ * Append a new rule to a stylesheet
+ * @param tree
+ * @param selector
+ * @param properties
+ * @returns {*}
+ */
+exports.css.insertRule = function(tree,selector,properties) {
+
+  var rule = {
+    "type": "rule",
+    "selectors": [selector],
+    "declarations": []
+  }
+  _.each(properties,function(value,propertyName) {
+    rule.declarations.push({
+      "type": "declaration",
+      "property": propertyName,
+      "value": value
+    })
+  })
+
+  tree.stylesheet.rules.push(rule)
+
+  return tree;
+}
+
+/**
+ * Checks whether the given stylesheet has a rule for the given DOM id.
+ * @param tree
+ * @param id
+ * @param cb
+ */
+exports.css.hasId = function(tree,id) {
+  return exports.css.hasRule(tree,'#'+id)
+}
+
+/**
+ * Checks whether a given stylesheet contains any rule with the given selector.
+ * NB: returns false if not found, true if any found -- can match more than one
+ * @param tree
+ * @param selector
+ * @param cb
+ */
+exports.css.hasRule = function(tree,selector) {
+  //console.log(util.inspect(tree.stylesheet.rules,{depth:null}))
+  var found = false;
+  tree.stylesheet.rules.forEach(function(rule,index) {
+    if (_.contains(rule['selectors'],selector)) {
+      found = true
+    }
+  })
+  return found
 }
