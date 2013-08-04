@@ -404,6 +404,7 @@ exports.toHtml = function(dom,cb,depth) {
         output += "<" + element.raw + ">"
         complete();
         break;
+      case "script": // why does the parser think a script is not a tag?
       case "tag":
         output += "<" + element.name
         if (element.attribs && _.size(element.attribs) > 0) {
