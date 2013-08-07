@@ -537,6 +537,32 @@ exports.insertBefore = function(domTree,mkId,newContent,cb) {
 }
 
 /**
+ * Insert an element into the tree as a child of the target.
+ * @param domTree
+ * @param mkId
+ * @param newContent
+ * @param cb
+ */
+exports.insertAppend = function(domTree,mkId,newContent,cb) {
+
+  var changeFn = function(element,cb) {
+    // push it on to the child stack, whether or not it already has children
+    if (!element.children) {
+      console.log("changed kids")
+      element.children = newContent
+    } else {
+      element.children = _.union(element.children,newContent)
+    }
+    cb(element)
+  }
+
+  exports.findElementAndApply(domTree,mkId,changeFn,function(newDom) {
+    cb(newDom)
+  })
+
+}
+
+/**
  * Remove the target element (and all its children) from the tree.
  * @param domTree
  * @param mkId
