@@ -446,18 +446,27 @@ exports.toHtml = function(dom,cb,depth) {
 }
 
 /**
+ * Read string of HTML parse into DOM structure
+ * @param path
+ * @param cb
+ */
+exports.parse = function(html,cb) {
+  // get HTMLparser to do the heavy lifting
+  var handler = new htmlparser.DefaultHandler(function (er, dom) {
+    cb(er,dom)
+  });
+  var parser = new htmlparser.Parser(handler);
+  parser.parseComplete(html);
+}
+
+/**
  * Read HTML from disk and parse into DOM structure
  * @param filename
  * @param cb
  */
 exports.parseFile = function(path,cb) {
   fs.readFile(path,'utf-8',function(er,rawHtml) {
-    // get HTMLparser to do the heavy lifting
-    var handler = new htmlparser.DefaultHandler(function (er, dom) {
-      cb(er,dom)
-    });
-    var parser = new htmlparser.Parser(handler);
-    parser.parseComplete(rawHtml);
+    exports.parse(rawHtml,cb)
   })
 }
 
