@@ -389,6 +389,7 @@ exports.toHtml = function(dom,cb,depth) {
   var complete = function() {
     count--;
     if (count == 0) {
+      //console.log("Fragment output: " + output)
       cb(er,output)
     }
   }
@@ -425,7 +426,7 @@ exports.toHtml = function(dom,cb,depth) {
             output += "</" + element.name + ">"
           }
         }
-        if (element.children) {
+        if (element.children && _.size(element.children) > 0) {
           exports.toHtml(element.children,function(er,html) {
             output += html
             endTag()

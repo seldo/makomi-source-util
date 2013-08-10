@@ -12,10 +12,10 @@ test('remove the given element from the tree', function (t) {
 
   t.plan(1);
 
-  var inFile = "./test/data/remove/before.html"
-  var expectedFile = "./test/data/remove/after.html"
-  var outFile = "/tmp/remove.html"
-  var targetId = "xxxxx6"
+  var inFile = "./test/data/remove/2/before.html"
+  var expectedFile = "./test/data/remove/2/after.html"
+  var outFile = "/tmp/remove.2.html"
+  var targetId = "12"
 
   testUtil.compareToExpectedOutput(t,expectedFile,function(cb) {
     mkSrc.parseFile(inFile,function(er,dom) {
