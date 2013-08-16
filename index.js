@@ -849,7 +849,7 @@ exports.css.hasRule = function(tree,selector) {
 }
 
 exports.config = {}
-const configFile = process.env.MAKOMICONF || '/etc/makomi/makomi.conf'
+var configFile = process.env.MAKOMICONF || '/etc/makomi/makomi.conf'
 var configData = null;
 
 /**
