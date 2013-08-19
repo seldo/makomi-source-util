@@ -1,8 +1,37 @@
 var fs = require('fs-extra')
 var _ = require('underscore')
 
-var configFile = process.env.MAKOMICONF || '/etc/makomi/makomi.conf'
+var configFile = false;
 var configData = null;
+
+/**
+ * Tell everybody where the config file is.
+ * @param path
+ */
+exports.setConfigFileLocation = function(path) {
+  if (path) {
+    configFile = path
+  } else if (process.env.MAKOMICONF) {
+    configFile = process.env.MAKOMICONF;
+  } else {
+    configFile = '/etc/makomi/makomi.conf'
+  }
+}
+
+// returns the config file location
+var getConfigFileLocation = function() {
+  if (!configFile) {
+    throw new Error("Config file location not set")
+  }
+  return configFile
+}
+
+/**
+ * Mostly for unit tests; reset the config data, forcing a reload
+ */
+exports.resetConfig = function() {
+  configData = null
+}
 
 /**
  * Load config file and store it in memory
@@ -12,10 +41,10 @@ exports.loadConfig = function(cb) {
   if (configData) {
     cb(configData)
   } else {
-    fs.readJSON(configFile,function(er,configObj) {
+    fs.readJSON(getConfigFileLocation(),function(er,configObj) {
       if (er) {
         console.log(er)
-        throw new Error("Could not load config file at " + configFile)
+        throw new Error("Could not load config file at " + getConfigFileLocation())
       }
       configData = configObj
       cb(configData)
@@ -24,10 +53,10 @@ exports.loadConfig = function(cb) {
 }
 
 exports.saveConfig = function(config,cb) {
-  fs.writeJSON(configFile,config,function(er) {
+  fs.writeJSON(getConfigFileLocation(),config,function(er) {
     if (er) {
       console.log(er)
-      throw new Error("Could not write config file at " + configFile)
+      throw new Error("Could not write config file at " + getConfigFileLocation())
     }
     configData = config
     cb()

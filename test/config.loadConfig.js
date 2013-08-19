@@ -3,6 +3,7 @@ var fs = require('fs-extra');
 var util = require('util');
 var _ = require('underscore')
 var testUtil = require('./util.js')
+var mkSrc = require('../index.js');
 
 test('load a config file', function (t) {
 
@@ -18,9 +19,8 @@ test('load a config file', function (t) {
     }
   }
 
-  process.env.MAKOMICONF = inFile;
-
-  var mkSrc = require('../index.js'); // do this here to get process value
+  mkSrc.config.resetConfig()
+  mkSrc.config.setConfigFileLocation(inFile)
 
   mkSrc.config.loadConfig(function(config) {
     t.deepEquals(config,expected)

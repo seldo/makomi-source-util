@@ -27,7 +27,7 @@ test('add a new rule to a CSS file', function (t) {
     mkSrc.css.parse(inFile,function(css) {
       var newCss = mkSrc.css.insertRule(css,newSelector,newProperties)
       mkSrc.css.write(outFile,newCss,function(rawCss) {
-        console.log("Wrote CSS " + rawCss)
+        //console.log("Wrote CSS " + rawCss)
         cb(rawCss)
       })
     })

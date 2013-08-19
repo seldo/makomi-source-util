@@ -26,7 +26,7 @@ test('parse a CSS file and re-output it', function (t) {
     mkSrc.css.parse(inFile,function(css) {
       var newCss = mkSrc.css.modifyId(css,targetId,newProperties);
       mkSrc.css.write(outFile,newCss,function(rawCss) {
-        console.log("Wrote CSS " + rawCss)
+        //console.log("Wrote CSS " + rawCss)
         cb(rawCss)
       })
     })

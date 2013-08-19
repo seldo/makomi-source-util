@@ -18,7 +18,7 @@ test('parse a CSS file and re-output it', function (t) {
   mkSrc.css.parse(inFile,function(css) {
     testUtil.compareToExpectedOutput(t,inFile,function(cb) {
       mkSrc.css.write(outFile,css,function(rawCss) {
-        console.log("Wrote CSS " + rawCss)
+        //console.log("Wrote CSS " + rawCss)
         cb(rawCss)
       })
     })

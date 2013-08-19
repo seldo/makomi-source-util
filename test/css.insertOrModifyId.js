@@ -37,7 +37,7 @@ test('Parse a CSS file, modify an ID-based rule or append a new one as appropria
       var newCss1 = mkSrc.css.insertOrModifyId(css,modifyId,modifyProperties)
       var newCss2 = mkSrc.css.insertOrModifyId(newCss1,newId,newProperties)
       mkSrc.css.write(outFile,newCss2,function(rawCss) {
-        console.log("Wrote CSS " + rawCss)
+        //console.log("Wrote CSS " + rawCss)
         cb(rawCss)
       })
     })

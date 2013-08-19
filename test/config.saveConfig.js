@@ -3,6 +3,7 @@ var fs = require('fs-extra');
 var util = require('util');
 var _ = require('underscore')
 var testUtil = require('./util.js')
+var mkSrc = require('../index.js');
 
 test('save a config file', function (t) {
 
@@ -19,9 +20,8 @@ test('save a config file', function (t) {
     }
   }
 
-  process.env.MAKOMICONF = outFile;
-
-  var mkSrc = require('../index.js'); // do this here to get process value
+  mkSrc.config.resetConfig()
+  mkSrc.config.setConfigFileLocation(outFile)
 
   testUtil.compareToExpectedOutput(t,expectedFile,function(cb) {
     mkSrc.config.saveConfig(config,function() {

@@ -3,6 +3,7 @@ var fs = require('fs-extra');
 var util = require('util');
 var _ = require('underscore')
 var testUtil = require('./util.js')
+var mkSrc = require('../index.js');
 
 test('save a config file', function (t) {
 
@@ -12,9 +13,8 @@ test('save a config file', function (t) {
   var outFile = "/tmp/config.set.json"
   var expectedFile = "./test/data/config/set.json"
 
-  process.env.MAKOMICONF = outFile;
-
-  var mkSrc = require('../index.js'); // do this here to get process value
+  mkSrc.config.resetConfig()
+  mkSrc.config.setConfigFileLocation(outFile)
 
   // copy the inFile to the outfile location, as set() will read from there
   fs.copy(inFile,outFile,function(er) {

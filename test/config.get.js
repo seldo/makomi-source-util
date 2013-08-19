@@ -3,6 +3,7 @@ var fs = require('fs-extra');
 var util = require('util');
 var _ = require('underscore')
 var testUtil = require('./util.js')
+var mkSrc = require('../index.js');
 
 test('get a value from a config file', function (t) {
 
@@ -12,9 +13,8 @@ test('get a value from a config file', function (t) {
   var key = "key3.key32.key322"
   var expectedValue = "value322"
 
-  process.env.MAKOMICONF = inFile;
-
-  var mkSrc = require('../index.js'); // do this here to get process value
+  mkSrc.config.resetConfig()
+  mkSrc.config.setConfigFileLocation(inFile)
 
   mkSrc.config.get(key,function(value) {
     t.equals(value,expectedValue)
