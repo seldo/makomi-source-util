@@ -2,6 +2,7 @@ var fs = require('fs-extra')
 var _ = require('underscore')
 
 var configFile = false;
+var configEnv = null;
 var configData = null;
 
 /**
@@ -30,14 +31,16 @@ var getConfigFileLocation = function() {
  * Mostly for unit tests; reset the config data, forcing a reload
  */
 exports.resetConfig = function() {
-  configData = null
+  configData = null;
+  configEnv = null;
 }
 
 /**
  * Load config file and store it in memory
+ * @param env The environment to use
  * @param cb
  */
-exports.loadConfig = function(cb) {
+exports.loadConfig = function(env,cb) {
   if (configData) {
     cb(configData)
   } else {
@@ -46,7 +49,11 @@ exports.loadConfig = function(cb) {
         console.log(er)
         throw new Error("Could not load config file at " + getConfigFileLocation())
       }
+      if (!configObj[env]) {
+        throw new Error("Config does not have an environment " + env)
+      }
       configData = configObj
+      configEnv = env
       cb(configData)
     })
   }
@@ -69,6 +76,7 @@ exports.saveConfig = function(config,cb) {
  * @param cb
  */
 exports.get = function(keyString,cb) {
+  keyString = configEnv + '.' + keyString
   exports.loadConfig(function(config) {
     var keyParts = keyString.split('.')
     var obj = config;
@@ -91,6 +99,7 @@ exports.get = function(keyString,cb) {
  * @param cb
  */
 exports.set = function(keyString,value,cb) {
+  keyString = configEnv + '.' + keyString
   exports.loadConfig(function(config) {
     var keyParts = keyString.split('.')
     var obj = config;
