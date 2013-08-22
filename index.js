@@ -88,6 +88,27 @@ exports.loadController = function(sourceDir,controller,action,cb) {
 }
 
 /**
+ * Get the object defining a datasource
+ * @param sourceDir
+ * @param datasource Name of the datasourceß
+ * @param cb
+ */
+exports.loadDatasource = function(sourceDir,datasource,cb) {
+  fs.readFile(
+    sourceDir+'datasources/' + datasource +'.json',
+    'utf-8',
+    function(er,data) {
+      if (er || !data) {
+        console.log(er)
+        throw new Error("Failed loading datasource " + datasource)
+      } else {
+        cb(JSON.parse(data))
+      }
+    }
+  )
+}
+
+/**
  * Prepare a source directory for editing by makomi.
  * This primarily means adding IDs to everything so the editor
  * knows how to edit things.
