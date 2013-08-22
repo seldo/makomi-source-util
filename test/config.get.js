@@ -15,6 +15,7 @@ test('get a value from a config file', function (t) {
 
   mkSrc.config.resetConfig()
   mkSrc.config.setConfigFileLocation(inFile)
+  mkSrc.config.setEnv('test')
 
   mkSrc.config.get(key,function(value) {
     t.equals(value,expectedValue)

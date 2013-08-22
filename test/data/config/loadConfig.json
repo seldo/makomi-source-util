@@ -1,8 +1,10 @@
 {
-  "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
-  "scratchpad": "/tmp/makomi/",
-  "sessions": {
-    "key": "mks",
-    "secret": "this is totes a secret"
+  "test": {
+    "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
+    "scratchpad": "/tmp/makomi/",
+    "sessions": {
+      "key": "mks",
+      "secret": "this is totes a secret"
+    }
   }
 }

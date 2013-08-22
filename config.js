@@ -27,6 +27,11 @@ var getConfigFileLocation = function() {
   return configFile
 }
 
+// set the environment
+exports.setEnv = function(env) {
+  configEnv = env
+}
+
 /**
  * Mostly for unit tests; reset the config data, forcing a reload
  */
@@ -40,7 +45,10 @@ exports.resetConfig = function() {
  * @param env The environment to use
  * @param cb
  */
-exports.loadConfig = function(env,cb) {
+exports.loadConfig = function(cb) {
+  if(!configEnv) {
+    throw new Error("Config environment not set")
+  }
   if (configData) {
     cb(configData)
   } else {
@@ -49,11 +57,10 @@ exports.loadConfig = function(env,cb) {
         console.log(er)
         throw new Error("Could not load config file at " + getConfigFileLocation())
       }
-      if (!configObj[env]) {
+      if (!configObj[configEnv]) {
         throw new Error("Config does not have an environment " + env)
       }
       configData = configObj
-      configEnv = env
       cb(configData)
     })
   }
@@ -76,6 +83,7 @@ exports.saveConfig = function(config,cb) {
  * @param cb
  */
 exports.get = function(keyString,cb) {
+  console.log("Config env " + configEnv)
   keyString = configEnv + '.' + keyString
   exports.loadConfig(function(config) {
     var keyParts = keyString.split('.')

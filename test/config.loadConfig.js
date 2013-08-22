@@ -11,16 +11,19 @@ test('load a config file', function (t) {
 
   var inFile = "./test/data/config/loadConfig.json"
   var expected = {
-    "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
-    "scratchpad": "/tmp/makomi/",
-    "sessions": {
-      "key": "mks",
-      "secret": "this is totes a secret"
+    "test": {
+      "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
+      "scratchpad": "/tmp/makomi/",
+      "sessions": {
+        "key": "mks",
+        "secret": "this is totes a secret"
+      }
     }
   }
 
   mkSrc.config.resetConfig()
   mkSrc.config.setConfigFileLocation(inFile)
+  mkSrc.config.setEnv('test')
 
   mkSrc.config.loadConfig(function(config) {
     t.deepEquals(config,expected)

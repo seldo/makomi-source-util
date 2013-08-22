@@ -12,16 +12,19 @@ test('save a config file', function (t) {
   var outFile = "/tmp/config.saveConfig.json"
   var expectedFile = "./test/data/config/loadConfig.json"
   var config = {
-    "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
-    "scratchpad": "/tmp/makomi/",
-    "sessions": {
-      "key": "mks",
-      "secret": "this is totes a secret"
+    "test": {
+      "workspace": "/Users/seldo/Workspace/Makomi/makomi/workspace/",
+      "scratchpad": "/tmp/makomi/",
+      "sessions": {
+        "key": "mks",
+        "secret": "this is totes a secret"
+      }
     }
   }
 
   mkSrc.config.resetConfig()
   mkSrc.config.setConfigFileLocation(outFile)
+  mkSrc.config.setEnv('test')
 
   testUtil.compareToExpectedOutput(t,expectedFile,function(cb) {
     mkSrc.config.saveConfig(config,function() {

@@ -15,6 +15,7 @@ test('save a config file', function (t) {
 
   mkSrc.config.resetConfig()
   mkSrc.config.setConfigFileLocation(outFile)
+  mkSrc.config.setEnv('test')
 
   // copy the inFile to the outfile location, as set() will read from there
   fs.copy(inFile,outFile,function(er) {
