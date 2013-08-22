@@ -84,20 +84,29 @@ exports.saveConfig = function(config,cb) {
  */
 exports.get = function(keyString,cb) {
   console.log("Config env " + configEnv)
-  keyString = configEnv + '.' + keyString
   exports.loadConfig(function(config) {
-    var keyParts = keyString.split('.')
-    var obj = config;
-    var key;
-    while(key = keyParts.shift()) {
-      if (obj[key]) {
-        obj = obj[key]
-      } else {
-        throw new Error("Key " + key + "not found")
-      }
-    }
-    cb(obj);
+    cb(exports.getSync(keyString));
   })
+}
+
+/**
+ * Synchronous get. Call only if you know you're somewhere inside a loadConfig() callback
+ * @param keyString
+ * @returns {null}
+ */
+exports.getSync = function(keyString) {
+  keyString = configEnv + '.' + keyString
+  var keyParts = keyString.split('.')
+  var obj = configData;
+  var key;
+  while(key = keyParts.shift()) {
+    if (obj[key]) {
+      obj = obj[key]
+    } else {
+      throw new Error("Key " + key + "not found")
+    }
+  }
+  return obj;
 }
 
 /**
