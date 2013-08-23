@@ -103,7 +103,7 @@ exports.getSync = function(keyString) {
     if (obj[key]) {
       obj = obj[key]
     } else {
-      throw new Error("Key " + key + "not found")
+      throw new Error("Key " + key + " not found")
     }
   }
   return obj;
